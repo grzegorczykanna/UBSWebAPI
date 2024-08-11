@@ -137,7 +137,7 @@ def get_the_population_for_subregion(subregion):
                     'Population': country.get('population'),
                     'Area': country.get('area'),
                     'Borders': country.get('borders'),
-                    f'Total population of {subregion}': total_population
+                    f'Total population of {subregion.title()}': total_population
                 }
                 for country in data if country.get('population')
         ]
@@ -146,7 +146,7 @@ def get_the_population_for_subregion(subregion):
         if request.args.get('format') == 'csv':
             # Create a CSV file in memory
             output = io.StringIO()
-            writer = csv.DictWriter(output, fieldnames=["Country name", "Capital", "Region", "Sub Region", "Population", "Area", "Borders", f"Total population of {subregion}"])
+            writer = csv.DictWriter(output, fieldnames=["Country name", "Capital", "Region", "Sub Region", "Population", "Area", "Borders", f"Total population of {subregion.title()}"])
             writer.writeheader()
             writer.writerows(result)
             output.seek(0)
