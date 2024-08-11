@@ -1,169 +1,127 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 import requests
-import os
-from dotenv import load_dotenv
-import json
-from urllib.parse import quote
-
-# Load environment variables from .env file
-load_dotenv()
 
 app = Flask(__name__)
 
-# datasource
-API_URL = 'https://countryapi.io/api'
-# Retrieve the API key from environment variables
-API_KEY = os.getenv('API_KEY')
+API_URL = 'https://restcountries.com/v3.1'
 
-@app.route('/api/region/<region>/10_biggest_countries', methods=['GET'])
-def get_10_biggest_countries_by_region(region):
-    # Set up the headers with the API key
-    headers = {
-        'Authorization': f'Bearer {API_KEY}'
-    }
-
-    try:
-        # Send a GET request to the API
-        response = requests.get(f'{API_URL}/region/{region}', headers=headers)
-        
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Parse the JSON response
-            data = response.json()
-
-               # Extract relevant information: country name and area
-            countries = [
-                {
-                    'name': country.get('name'),
-                    'capital': country.get('capital'),
-                    'region': country.get('region'),
-                    'subregion': country.get('subregion'),
-                    'population': country.get('population'),
-                    'area': country.get('area'),
-                    'borders': country.get('borders')
-                } 
-                for country in data.values() if country.get('area')
-            ]
-            
-            # Sort countries by area in descending order
-            countries_sorted = sorted(countries, key=lambda x: x['area'], reverse=True)
-            
-            # Get the top 10 countries
-            top_10_countries = countries_sorted[:10]
-            
-            # Return the data as a JSON response
-            return jsonify(top_10_countries)
-        
-        else:
-            # Handle different types of errors
-            return jsonify({"error": f"Failed to fetch data: {response.status_code}"}), response.status_code
-
-    except Exception as e:
-        # Handle any exceptions that occur
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/region/<region>/borders', methods=['GET'])
-def get_countries_with_over_3_borders_by_region(region):
-    # Set up the headers with the API key
-    headers = {
-        'Authorization': f'Bearer {API_KEY}'
-    }
-    
-    # Construct the final URL
+# Route to get the 10 biggest countries by area in a region
+@app.route('/api/region/<region>/biggest_countries_in_region', methods=['GET'])
+def get_10_biggest_countries_by_area_for_region(region):
+    # Construct the URL for fetching region data
     request_url = f'{API_URL}/region/{region}'
     
-    # Debugging: Print the URL to the console
-    print(f"Requesting data from: {request_url}")
+    # Send the request
+    response = requests.get(request_url)
+    
+    if response.status_code == 200:
+        data = response.json()
 
-    try:
-        # Send a GET request to the API
-        response = requests.get(request_url, headers=headers)
+        # Sort countries by area in descending order
+        sorted_countries = sorted(
+            data,
+            key=lambda country: country.get('area', 0),
+            reverse=True
+        )
+
+        # Get the top 10 largest countries
+        biggest_countries = sorted_countries[:10]
         
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Parse the JSON response
-            data = response.json()
-
-            # Filter countries with more than 3 borders
-            countries_with_borders = [
+        # Build the result
+        result = {
+            f'10 biggest countries in {region.capitalize()}': [
                 {
-                    'name': country.get('name'),
-                    'capital': country.get('capital'),
-                    'region': country.get('region'),
-                    'subregion': country.get('subregion'),
-                    'population': country.get('population'),
-                    'area': country.get('area'),
-                    'borders': country.get('borders'),
-                    'num_of_borders': len(country.get('borders', []))
-                } 
-                for country in data.values() if len(country.get('borders', [])) > 3
+                    'Capital': country.get('capital'),
+                    'Region': country.get('region'),
+                    'Sub Region': country.get('subregion'),
+                    'Population': country.get('population'),
+                    'Area': country.get('area'),
+                    'Borders': country.get('borders'),
+                    'Country name': country.get('name', {}).get('common')
+                }
+                for country in biggest_countries if country.get('area')
             ]
+        }
+
+        return jsonify(result)
+    else:
+        return jsonify({"error": "Failed to fetch data"}), response.status_code
+    
+# Route to get the countries with over 3 borders in a subregion
+@app.route('/api/subregion/<subregion>/countries_borders', methods=['GET'])
+def get_all_countries_with_over_3_borders_for_subregion(subregion):
+    # Construct the URL for fetching region data
+    request_url = f'{API_URL}/subregion/{subregion}'
+    
+    # Send the request
+    response = requests.get(request_url)
+    
+    if response.status_code == 200:
+        data = response.json()
         
-            return jsonify(countries_with_borders)
-        # elif response.status_code == 404:
-        #     return jsonify({"error": f"Subregion '{subregion}' not found in the external API"}), 404
-   
-        else:
-            # Handle different types of errors
-            return jsonify({"error": f"Failed to fetch data: {response.status_code}"}), response.status_code
+        result = {
+            f'Countries in {subregion.title()} with more than 3 borders': [
+                {
+                    'Capital': country.get('capital'),
+                    'Region': country.get('region'),
+                    'Sub Region': country.get('subregion'),
+                    'Population': country.get('population'),
+                    'Area': country.get('area'),
+                    'Borders': country.get('borders'),
+                    'Country name': country.get('name', {}).get('common')
+                }
+                for country in data if len(country.get('borders')) > 3
+            ]
+        }
 
-    except Exception as e:
-        # Handle any exceptions that occur
-        return jsonify({"error": str(e)}), 500
+        return jsonify(result)
+    else:
+        return jsonify({"error": "Failed to fetch data"}), response.status_code
+    
+# Route to get the population in a subregion
+@app.route('/api/subregion/<subregion>/region_population', methods=['GET'])
+def get_the_population_for_subregion(subregion):
+    # Construct the URL for fetching region data
+    request_url = f'{API_URL}/subregion/{subregion}'
+    
+    # Send the request
+    response = requests.get(request_url)
+    
+    if response.status_code == 200:
+        data = response.json()
 
-@app.route('/api/region/<region>/region_population', methods=['GET'])
-def get_the_popultaion_of_region(region):
-    # Set up the headers with the API key
-    headers = {
-        'Authorization': f'Bearer {API_KEY}'
-    }
+        total_population = 0
 
-    try:
-        # Send a GET request to the API
-        response = requests.get(f'{API_URL}/region/{region}', headers=headers)
+        # Calculate total population and list each country's population
+        for country in data:
+            population = country.get('population')
+            total_population += population
         
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Parse the JSON response
-            data = response.json()
+        result = {
+            'subregion': country.get('subregion'),
+            'total_population': total_population,
+        }
 
-            total_population = 0
-            countries_population = []
-
-            # Calculate total population and list each country's population
-            for country in data.values():
-                name = country.get('name')
-                capital = country.get('capital')
-                region = country.get('region')
-                subregion = country.get('subregion')
-                area = country.get('area')
-                borders = country.get('borders')
-                population = country.get('population', 0)
-                total_population += population
-                countries_population.append({
-                    'name': name,
-                    'population': population,
-                    'capital': capital,
-                    'region': region,
-                    'subregion': subregion,
-                    'area': area,
-                    'borders': borders
-                })
-            
-            result = {
-                'region': region,
-                'total_population': total_population,
-                'countries': countries_population
-            }
-            return jsonify(result)
-
-        else:
-            # Handle different types of errors
-            return jsonify({"error": f"Failed to fetch data: {response.status_code}"}), response.status_code
-
-    except Exception as e:
-        # Handle any exceptions that occur
-        return jsonify({"error": str(e)}), 500
         
+        result = {
+            f'Total population in {subregion.title()}': total_population,
+            f'Countries included in {subregion.title()}': [
+                {
+                    'Capital': country.get('capital'),
+                    'Region': country.get('region'),
+                    'Sub Region': country.get('subregion'),
+                    'Population': country.get('population'),
+                    'Area': country.get('area'),
+                    'Borders': country.get('borders'),
+                    'Country name': country.get('name', {}).get('common')
+                }
+                for country in data if country.get('population')
+            ]
+        }
+
+        return jsonify(result)
+    else:
+        return jsonify({"error": "Failed to fetch data"}), response.status_code
+
 if __name__ == '__main__':
     app.run(debug=True)
