@@ -1,5 +1,8 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, Response
 import requests
+import csv
+import io
+import json
 
 app = Flask(__name__)
 
@@ -28,22 +31,32 @@ def get_10_biggest_countries_by_area_for_region(region):
         biggest_countries = sorted_countries[:10]
         
         # Build the result
-        result = {
-            f'10 biggest countries in {region.capitalize()}': [
+        result = [
                 {
-                    'Capital': country.get('capital'),
+                    'Country name': country.get('name', {}).get('common'),
+                    'Capital': country.get('capital')[0],
                     'Region': country.get('region'),
                     'Sub Region': country.get('subregion'),
                     'Population': country.get('population'),
                     'Area': country.get('area'),
-                    'Borders': country.get('borders'),
-                    'Country name': country.get('name', {}).get('common')
+                    'Borders': country.get('borders')
                 }
                 for country in biggest_countries if country.get('area')
             ]
-        }
-
-        return jsonify(result)
+        
+        # Check if the user requested CSV format
+        if request.args.get('format') == 'csv':
+            # Create a CSV file in memory
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=["Country name", "Capital", "Region", "Sub Region", "Population", "Area", "Borders"])
+            writer.writeheader()
+            writer.writerows(result)
+            output.seek(0)
+            
+            # Return the CSV data as a response
+            return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=biggest_countries_in_region.csv"})
+        else:
+            return Response(json.dumps(result, indent=4), mimetype='application/json')
     else:
         return jsonify({"error": "Failed to fetch data"}), response.status_code
     
@@ -59,22 +72,33 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
     if response.status_code == 200:
         data = response.json()
         
-        result = {
-            f'Countries in {subregion.title()} with more than 3 borders': [
+        result = [
                 {
-                    'Capital': country.get('capital'),
+                    'Country name': country.get('name', {}).get('common'),
+                    'Capital': country.get('capital')[0],
                     'Region': country.get('region'),
                     'Sub Region': country.get('subregion'),
                     'Population': country.get('population'),
                     'Area': country.get('area'),
-                    'Borders': country.get('borders'),
-                    'Country name': country.get('name', {}).get('common')
+                    'Borders': country.get('borders')
                 }
                 for country in data if len(country.get('borders')) > 3
-            ]
-        }
+        ]
 
-        return jsonify(result)
+        # Check if the user requested CSV format
+        if request.args.get('format') == 'csv':
+            # Create a CSV file in memory
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=["Country name", "Capital", "Region", "Sub Region", "Population", "Area", "Borders"])
+            writer.writeheader()
+            writer.writerows(result)
+            output.seek(0)
+            
+            # Return the CSV data as a response
+            return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=biggest_countries_in_region.csv"})
+        else:
+            return Response(json.dumps(result, indent=4), mimetype='application/json')
+        
     else:
         return jsonify({"error": "Failed to fetch data"}), response.status_code
     
@@ -103,23 +127,34 @@ def get_the_population_for_subregion(subregion):
         }
 
         
-        result = {
-            f'Total population in {subregion.title()}': total_population,
-            f'Countries included in {subregion.title()}': [
+        result = [
+            
                 {
-                    'Capital': country.get('capital'),
+                    'Country name': country.get('name', {}).get('common'),
+                    'Capital': country.get('capital')[0],
                     'Region': country.get('region'),
                     'Sub Region': country.get('subregion'),
                     'Population': country.get('population'),
                     'Area': country.get('area'),
                     'Borders': country.get('borders'),
-                    'Country name': country.get('name', {}).get('common')
+                    f'Total population of {subregion}': total_population
                 }
                 for country in data if country.get('population')
-            ]
-        }
+        ]
 
-        return jsonify(result)
+        # Check if the user requested CSV format
+        if request.args.get('format') == 'csv':
+            # Create a CSV file in memory
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=["Country name", "Capital", "Region", "Sub Region", "Population", "Area", "Borders", f"Total population of {subregion}"])
+            writer.writeheader()
+            writer.writerows(result)
+            output.seek(0)
+            
+            # Return the CSV data as a response
+            return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment;filename=biggest_countries_in_region.csv"})
+        else:
+            return Response(json.dumps(result, indent=4), mimetype='application/json')
     else:
         return jsonify({"error": "Failed to fetch data"}), response.status_code
 
