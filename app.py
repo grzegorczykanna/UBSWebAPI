@@ -9,17 +9,37 @@ app = Flask(__name__)
 API_URL = "https://restcountries.com/v3.1"
 
 
+def fetch_data(type, name):
+    """
+    Fetch data from the API.
+
+    Args:
+        type (str): 'region' or 'subregion'
+        name (str): The name of region/subregion to fetch data for.
+
+    Returns:
+        list: A list of country data for the region/subregion if successful, otherwise None.
+    """
+    # Construct the URL for fetching region data
+    request_url = f"{API_URL}/{type}/{name}"
+
+    # Send the request
+    response = requests.get(request_url)
+
+    # Check if the response was successful
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+
 # Route to get the 10 biggest countries by area in a region
 @app.route("/api/region/<region>/biggest_countries_in_region", methods=["GET"])
 def get_10_biggest_countries_by_area_for_region(region):
 
-    # Construct the URL for fetching region data
-    request_url = f"{API_URL}/region/{region}"
-    # Send the request
-    response = requests.get(request_url)
+    data = fetch_data("region", region)
 
-    if response.status_code == 200:
-        data = response.json()
+    if data:
 
         # Sort countries by area in descending order
         sorted_data = sorted(
@@ -59,18 +79,16 @@ def get_10_biggest_countries_by_area_for_region(region):
 
         return Response(json.dumps(result, indent=4), mimetype="application/json")
     else:
-        return jsonify({"error": "Failed to fetch data"}), response.status_code
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 
 # Route to get the countries with over 3 borders in a subregion
 @app.route("/api/subregion/<subregion>/countries_borders", methods=["GET"])
 def get_all_countries_with_over_3_borders_for_subregion(subregion):
 
-    request_url = f"{API_URL}/subregion/{subregion}"
-    response = requests.get(request_url)
+    data = fetch_data("subregion", subregion)
 
-    if response.status_code == 200:
-        data = response.json()
+    if data:
 
         result = [
             {
@@ -99,18 +117,16 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
             return Response(json.dumps(result, indent=4), mimetype="application/json")
 
     else:
-        return jsonify({"error": "Failed to fetch data"}), response.status_code
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 
 # Route to get the population in a subregion
 @app.route("/api/subregion/<subregion>/subregion_population", methods=["GET"])
 def get_the_population_for_subregion(subregion):
 
-    request_url = f"{API_URL}/subregion/{subregion}"
-    response = requests.get(request_url)
+    data = fetch_data("subregion", subregion)
 
-    if response.status_code == 200:
-        data = response.json()
+    if data:
 
         # Calculate the total population for the subregion
         total_population = sum(country.get("population") for country in data)
@@ -159,7 +175,7 @@ def get_the_population_for_subregion(subregion):
         else:
             return Response(json.dumps(result, indent=4), mimetype="application/json")
     else:
-        return jsonify({"error": "Failed to fetch data"}), response.status_code
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 
 if __name__ == "__main__":
