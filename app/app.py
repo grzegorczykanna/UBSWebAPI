@@ -1,14 +1,24 @@
 from flask import Flask, jsonify, request, Response
+from flask_caching import Cache
 import json
 from utils.utils import fetch_data, format_csv_output, build_result
 
+config = {
+    "DEBUG": True,
+    "CACHE_TYPE": "SimpleCache",
+    "CACHE_DEFAULT_TIMEOUT": 300,
+}
+
 app = Flask(__name__)
+app.config.from_mapping(config)
+cache = Cache(app)
 
 API_URL = "https://restcountries.com/v3.1"
 
 
 # Route to get the 10 biggest countries by area in a region
 @app.route("/api/region/<region>/biggest_countries_in_region", methods=["GET"])
+@cache.cached(timeout=60)
 def get_10_biggest_countries_by_area_for_region(region):
 
     # Fetch the data from the API
@@ -40,6 +50,7 @@ def get_10_biggest_countries_by_area_for_region(region):
 
 # Route to get the countries with over 3 borders in a subregion
 @app.route("/api/subregion/<subregion>/countries_borders", methods=["GET"])
+@cache.cached(timeout=60)
 def get_all_countries_with_over_3_borders_for_subregion(subregion):
 
     data = fetch_data("subregion", subregion)
@@ -63,6 +74,7 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
 
 # Route to get the population in a subregion
 @app.route("/api/subregion/<subregion>/subregion_population", methods=["GET"])
+@cache.cached(timeout=60)
 def get_the_population_for_subregion(subregion):
 
     data = fetch_data("subregion", subregion)
@@ -81,6 +93,11 @@ def get_the_population_for_subregion(subregion):
 
     else:
         return jsonify({"error": "Failed to fetch data"}), 500
+    
+@app.route('/api/clear-cache', methods=['POST'])
+def clear_cache():
+    cache.clear()
+    return jsonify({"message": "Cache cleared"}), 200
 
 
 if __name__ == "__main__":
