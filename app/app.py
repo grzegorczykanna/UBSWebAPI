@@ -1,8 +1,5 @@
-import csv
 from flask import Flask, jsonify, request, Response
-import io
 import json
-import requests
 from utils.utils import fetch_data, format_csv_output, build_result
 
 app = Flask(__name__)
