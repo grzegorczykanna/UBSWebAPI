@@ -66,7 +66,7 @@ def get_10_biggest_countries_by_area_for_region(region):
 @app.route("/api/subregion/<subregion>/countries_borders", methods=["GET"])
 def get_all_countries_with_over_3_borders_for_subregion(subregion):
 
-    request_url = f"{API_URL}/region/{subregion}"
+    request_url = f"{API_URL}/subregion/{subregion}"
     response = requests.get(request_url)
 
     if response.status_code == 200:
