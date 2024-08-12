@@ -1,10 +1,11 @@
-from app.app import app
+from app.app import app, cache
 import json
 
 def test_get_10_biggest_countries_by_area_for_region_json(
     client, expected_countries_europe
 ):
-
+    
+    cache.clear()
     # Send a GET request to the endpoint
     response = client.get("/api/region/europe/biggest_countries_in_region")
     # Check that the status code is 200 (OK)
@@ -34,6 +35,7 @@ def test_get_10_biggest_countries_by_area_for_region_json(
 
 def test_get_10_biggest_countries_by_area_for_region_csv(client):
 
+    cache.clear()
     # Send a GET request to the endpoint with the CSV format
     response = client.get("/api/region/europe/biggest_countries_in_region?format=csv")
     # Check that the status code is 200 (OK)
@@ -54,6 +56,7 @@ def test_get_10_biggest_countries_by_area_for_region_csv(client):
 
 def test_region_not_found(client):
 
+    cache.clear()
     # Send a GET request to a non-existent region
     response = client.get("/api/region/nonexistentregion/biggest_countries_in_region")
 
@@ -67,6 +70,7 @@ def test_region_not_found(client):
 
 def test_get_all_countries_with_over_3_borders_for_subregion_json(client):
 
+    cache.clear()
     response = client.get("/api/subregion/central%20europe/countries_borders")
     assert response.status_code == 200
 
@@ -84,6 +88,7 @@ def test_get_all_countries_with_over_3_borders_for_subregion_json(client):
 
 def test_get_all_countries_with_over_3_borders_for_subregion_csv(client):
 
+    cache.clear()
     response = client.get(
         "/api/subregion/central%20europe/countries_borders?format=csv"
     )
@@ -101,6 +106,7 @@ def test_get_all_countries_with_over_3_borders_for_subregion_csv(client):
 
 def test_subregion_not_found_borders(client):
 
+    cache.clear()
     response = client.get("/api/subregion/nonexistentsubregion/countries_borders")
     assert response.status_code != 200
 
@@ -110,6 +116,7 @@ def test_subregion_not_found_borders(client):
 
 def test_get_the_population_for_subregion_json(client):
 
+    cache.clear()
     response = client.get("/api/subregion/central%20europe/subregion_population")
     assert response.status_code == 200
 
@@ -132,6 +139,7 @@ def test_get_the_population_for_subregion_json(client):
 
 def test_get_the_population_for_subregion_csv(client):
 
+    cache.clear()
     response = client.get(
         "/api/subregion/central%20europe/subregion_population?format=csv"
     )
@@ -150,6 +158,7 @@ def test_get_the_population_for_subregion_csv(client):
 
 def test_subregion_not_found_total_population(client):
 
+    cache.clear()
     response = client.get("/api/subregion/nonexistentsubregion/subregion_population")
     assert response.status_code != 200
 
