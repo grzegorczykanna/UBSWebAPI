@@ -103,7 +103,7 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
         return jsonify({"error": "Failed to fetch data"}), response.status_code
     
 # Route to get the population in a subregion
-@app.route('/api/subregion/<subregion>/region_population', methods=['GET'])
+@app.route('/api/subregion/<subregion>/subregion_population', methods=['GET'])
 def get_the_population_for_subregion(subregion):
     # Construct the URL for fetching region data
     request_url = f'{API_URL}/subregion/{subregion}'
