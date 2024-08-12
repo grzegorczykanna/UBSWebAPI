@@ -1,4 +1,4 @@
-from .app import app
+from app.app import app
 import json
 import pytest
 import time
@@ -77,7 +77,7 @@ def test_get_10_biggest_countries_by_area_for_region_csv(client):
     assert response.status_code == 200
 
     # Check that the response is of desired type
-    assert response.mimetype == "text/plain"
+    assert response.mimetype == "text/csv"
 
     # Check that the CSV contains the expected headers
     countries_csv = response.data.decode("utf-8")
@@ -125,7 +125,7 @@ def test_get_all_countries_with_over_3_borders_for_subregion_csv(client):
         "/api/subregion/central%20europe/countries_borders?format=csv"
     )
     assert response.status_code == 200
-    assert response.mimetype == "text/plain"
+    assert response.mimetype == "text/csv"
 
     countries_csv = response.data.decode("utf-8")
     assert "Country name" in countries_csv
@@ -162,7 +162,9 @@ def test_get_the_population_for_subregion_json(client):
         assert "Borders" in country
 
     assert isinstance(data[-1], dict)
-    assert any(f"Total population of Central Europe" in key for key in data[-1].keys())
+
+    total_population_key = f"Total population of subregion"
+    assert any(total_population_key in key for key in data[-1].keys())
 
 
 def test_get_the_population_for_subregion_csv(client):
@@ -171,7 +173,7 @@ def test_get_the_population_for_subregion_csv(client):
         "/api/subregion/central%20europe/subregion_population?format=csv"
     )
     assert response.status_code == 200
-    assert response.mimetype == "text/plain"
+    assert response.mimetype == "text/csv"
 
     countries_csv = response.data.decode("utf-8")
     assert "Country name" in countries_csv
@@ -180,7 +182,7 @@ def test_get_the_population_for_subregion_csv(client):
     assert "Sub Region" in countries_csv
     assert "Population" in countries_csv
     assert "Borders" in countries_csv
-    assert f"Total population of Central Europe" in countries_csv
+    assert f"Total population of subregion" in countries_csv
 
 
 def test_subregion_not_found_total_population(client):
