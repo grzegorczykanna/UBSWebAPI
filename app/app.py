@@ -6,7 +6,7 @@ from utils.utils import fetch_data, format_csv_output, build_result
 config = {
     "DEBUG": True,
     "CACHE_TYPE": "SimpleCache",
-    "CACHE_DEFAULT_TIMEOUT": 300,
+    "CACHE_DEFAULT_TIMEOUT": 100,
 }
 
 app = Flask(__name__)

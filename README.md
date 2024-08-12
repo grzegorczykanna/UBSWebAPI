@@ -61,6 +61,12 @@ To run the Flask web API locally, follow these steps:
    pip install -r requirements.txt
    ```
 
+4. **Run the application**:
+
+   ```bash
+   python app/app.py
+   ```
+
 ## Configuration
 
 The application uses Flask-Caching to cache responses. You can configure the cache settings in the app.py file:
@@ -69,7 +75,7 @@ The application uses Flask-Caching to cache responses. You can configure the cac
    config = {
     "DEBUG": True,
     "CACHE_TYPE": "SimpleCache",
-    "CACHE_DEFAULT_TIMEOUT": 300,
+    "CACHE_DEFAULT_TIMEOUT": 100,
 }
 ```
 
