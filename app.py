@@ -143,7 +143,6 @@ def get_the_population_for_subregion(subregion):
             total_population_entry = result[-1]
             total_population_key = list(total_population_entry.keys())[0]
             total_population_row = {field: "" for field in fieldnames}
-            print(total_population_row)
             total_population_row["Country name"] = total_population_key
             total_population_row["Population"] = total_population_entry[
                 total_population_key
