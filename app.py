@@ -66,7 +66,7 @@ def get_10_biggest_countries_by_area_for_region(region):
 @app.route("/api/subregion/<subregion>/countries_borders", methods=["GET"])
 def get_all_countries_with_over_3_borders_for_subregion(subregion):
 
-    request_url = f"{API_URL}/subregion/{subregion}"
+    request_url = f"{API_URL}/region/{subregion}"
     response = requests.get(request_url)
 
     if response.status_code == 200:
@@ -105,21 +105,15 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
 # Route to get the population in a subregion
 @app.route("/api/subregion/<subregion>/subregion_population", methods=["GET"])
 def get_the_population_for_subregion(subregion):
-    # Construct the URL for fetching region data
-    request_url = f"{API_URL}/subregion/{subregion}"
 
-    # Send the request
+    request_url = f"{API_URL}/subregion/{subregion}"
     response = requests.get(request_url)
 
     if response.status_code == 200:
         data = response.json()
 
-        total_population = 0
-
-        # Calculate total population for subregion
-        for country in data:
-            population = country.get("population")
-            total_population += population
+        # Calculate the total population for the subregion
+        total_population = sum(country.get("population") for country in data)
 
         result = [
             {
@@ -130,22 +124,37 @@ def get_the_population_for_subregion(subregion):
                 "Population": country.get("population"),
                 "Area": country.get("area"),
                 "Borders": country.get("borders"),
-                f"Total population of {subregion.title()}": total_population,
             }
             for country in data
             if country.get("population")
         ]
+
+        # Wrap the country data response and the total population
+        result.append({f"Total population of {subregion.title()}": total_population})
 
         if request.args.get("format") == "csv":
             output = io.StringIO()
             fieldnames = result[0].keys()
             writer = csv.DictWriter(output, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(result)
+            writer.writerows(result[:-1])
+
+            # Add a row for the total population entry
+            total_population_entry = result[-1]
+            total_population_key = list(total_population_entry.keys())[0]
+            total_population_row = {field: "" for field in fieldnames}
+            print(total_population_row)
+            total_population_row["Country name"] = total_population_key
+            total_population_row["Population"] = total_population_entry[
+                total_population_key
+            ]
+
+            # Write the total population row
+            writer.writerow(total_population_row)
             output.seek(0)
 
             return Response(
-                output,
+                output.getvalue(),
                 mimetype="text/plain",
             )
         else:

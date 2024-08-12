@@ -12,6 +12,23 @@ def client():
         yield client
 
 
+@pytest.fixture
+def expected_countries_europe():
+    # Define the expected 10 biggest countries by area in Europe
+    return [
+        "Russia",
+        "Ukraine",
+        "France",
+        "Spain",
+        "Sweden",
+        "Germany",
+        "Finland",
+        "Norway",
+        "Poland",
+        "Italy",
+    ]
+
+
 @pytest.fixture(scope="session", autouse=True)
 def measure_total_time():
     start_time = time.time()
@@ -21,7 +38,9 @@ def measure_total_time():
     print(f"\nTotal time taken for all tests: {total_duration:.4f} seconds")
 
 
-def test_get_10_biggest_countries_by_area_for_region_json(client):
+def test_get_10_biggest_countries_by_area_for_region_json(
+    client, expected_countries_europe
+):
 
     # Send a GET request to the endpoint
     response = client.get("/api/region/europe/biggest_countries_in_region")
@@ -34,6 +53,11 @@ def test_get_10_biggest_countries_by_area_for_region_json(client):
 
     # Check that there are exactly 10 countries in the response
     assert len(data) == 10
+
+    # Check the names of the countries returned by the API
+    # are the same as expected
+    countries_europe = [country["Country name"] for country in data]
+    assert countries_europe == expected_countries_europe
 
     # Check that each country has the expected keys
     for country in data:
@@ -56,20 +80,19 @@ def test_get_10_biggest_countries_by_area_for_region_csv(client):
     assert response.mimetype == "text/plain"
 
     # Check that the CSV contains the expected headers
-    country = response.data.decode("utf-8")
-    assert "Country name" in country
-    assert "Capital" in country
-    assert "Region" in country
-    assert "Sub Region" in country
-    assert "Population" in country
-    assert "Borders" in country
+    countries_csv = response.data.decode("utf-8")
+    assert "Country name" in countries_csv
+    assert "Capital" in countries_csv
+    assert "Region" in countries_csv
+    assert "Sub Region" in countries_csv
+    assert "Population" in countries_csv
+    assert "Borders" in countries_csv
 
 
 def test_region_not_found(client):
 
     # Send a GET request to a non-existent region
     response = client.get("/api/region/nonexistentregion/biggest_countries_in_region")
-    # response = client.get('/api/region/Northern%20Europe/biggest_countries_in_region')
 
     # Check that the status code is not 200
     assert response.status_code != 200
@@ -104,13 +127,13 @@ def test_get_all_countries_with_over_3_borders_for_subregion_csv(client):
     assert response.status_code == 200
     assert response.mimetype == "text/plain"
 
-    country = response.data.decode("utf-8")
-    assert "Country name" in country
-    assert "Capital" in country
-    assert "Region" in country
-    assert "Sub Region" in country
-    assert "Population" in country
-    assert "Borders" in country
+    countries_csv = response.data.decode("utf-8")
+    assert "Country name" in countries_csv
+    assert "Capital" in countries_csv
+    assert "Region" in countries_csv
+    assert "Sub Region" in countries_csv
+    assert "Population" in countries_csv
+    assert "Borders" in countries_csv
 
 
 def test_subregion_not_found_borders(client):
@@ -130,14 +153,16 @@ def test_get_the_population_for_subregion_json(client):
     data = json.loads(response.data)
     assert isinstance(data, list)
 
-    for country in data:
+    for country in data[:-1]:
         assert "Country name" in country
         assert "Capital" in country
         assert "Region" in country
         assert "Sub Region" in country
         assert "Population" in country
         assert "Borders" in country
-        assert f"Total population of Central Europe" in country
+
+    assert isinstance(data[-1], dict)
+    assert any(f"Total population of Central Europe" in key for key in data[-1].keys())
 
 
 def test_get_the_population_for_subregion_csv(client):
@@ -148,14 +173,14 @@ def test_get_the_population_for_subregion_csv(client):
     assert response.status_code == 200
     assert response.mimetype == "text/plain"
 
-    country = response.data.decode("utf-8")
-    assert "Country name" in country
-    assert "Capital" in country
-    assert "Region" in country
-    assert "Sub Region" in country
-    assert "Population" in country
-    assert "Borders" in country
-    assert f"Total population of Central Europe" in country
+    countries_csv = response.data.decode("utf-8")
+    assert "Country name" in countries_csv
+    assert "Capital" in countries_csv
+    assert "Region" in countries_csv
+    assert "Sub Region" in countries_csv
+    assert "Population" in countries_csv
+    assert "Borders" in countries_csv
+    assert f"Total population of Central Europe" in countries_csv
 
 
 def test_subregion_not_found_total_population(client):
