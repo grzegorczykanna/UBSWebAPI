@@ -33,14 +33,50 @@ def fetch_data(type, name):
         return None
 
 
+def format_csv_output(result, total_population_entry=None):
+    """
+    Formats a list of dictionaries into a CSV output.
+
+    Args:
+        result (list): List of dictionaries containing the country data.
+        total_population_entry (dict, optional): A dictionary containing the total population entry.
+                                                 If provided, it will be added as the last row in the CSV.
+
+    Returns:
+        Response: A Flask Response object containing the CSV data.
+    """
+    # Create a CSV file
+    output = io.StringIO()
+    fieldnames = result[0].keys()
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(result[:-1] if total_population_entry else result)
+
+    # Add a row for the total population entry
+    if total_population_entry:
+        total_population_key = list(total_population_entry.keys())[0]
+        total_population_row = {field: "" for field in fieldnames}
+        total_population_row["Country name"] = total_population_key
+        total_population_row["Population"] = total_population_entry[
+            total_population_key
+        ]
+
+        writer.writerow(total_population_row)
+
+    output.seek(0)
+
+    # Return the CSV data as a response
+    return Response(output, mimetype="text/plain")
+
+
 # Route to get the 10 biggest countries by area in a region
 @app.route("/api/region/<region>/biggest_countries_in_region", methods=["GET"])
 def get_10_biggest_countries_by_area_for_region(region):
 
+    # Fetch the data from the API
     data = fetch_data("region", region)
 
     if data:
-
         # Sort countries by area in descending order
         sorted_data = sorted(
             data, key=lambda country: country.get("area"), reverse=True
@@ -66,18 +102,12 @@ def get_10_biggest_countries_by_area_for_region(region):
 
         # Check if the user requested CSV format
         if request.args.get("format") == "csv":
-            # Create a CSV file
-            output = io.StringIO()
-            fieldnames = result[0].keys()
-            writer = csv.DictWriter(output, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(result)
-            output.seek(0)
+            # Return a CSV response
+            return format_csv_output(result)
 
-            # Return the CSV data as a response
-            return Response(output, mimetype="text/plain")
-
+        # Return a JSON response
         return Response(json.dumps(result, indent=4), mimetype="application/json")
+
     else:
         return jsonify({"error": "Failed to fetch data"}), 500
 
@@ -89,7 +119,6 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
     data = fetch_data("subregion", subregion)
 
     if data:
-
         result = [
             {
                 "Country name": country.get("name").get("common"),
@@ -105,16 +134,9 @@ def get_all_countries_with_over_3_borders_for_subregion(subregion):
         ]
 
         if request.args.get("format") == "csv":
-            output = io.StringIO()
-            fieldnames = result[0].keys()
-            writer = csv.DictWriter(output, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(result)
-            output.seek(0)
+            return format_csv_output(result)
 
-            return Response(output, mimetype="text/plain")
-        else:
-            return Response(json.dumps(result, indent=4), mimetype="application/json")
+        return Response(json.dumps(result, indent=4), mimetype="application/json")
 
     else:
         return jsonify({"error": "Failed to fetch data"}), 500
@@ -149,31 +171,14 @@ def get_the_population_for_subregion(subregion):
         result.append({f"Total population of {subregion.title()}": total_population})
 
         if request.args.get("format") == "csv":
-            output = io.StringIO()
-            fieldnames = result[0].keys()
-            writer = csv.DictWriter(output, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(result[:-1])
-
-            # Add a row for the total population entry
             total_population_entry = result[-1]
-            total_population_key = list(total_population_entry.keys())[0]
-            total_population_row = {field: "" for field in fieldnames}
-            total_population_row["Country name"] = total_population_key
-            total_population_row["Population"] = total_population_entry[
-                total_population_key
-            ]
 
-            # Write the total population row
-            writer.writerow(total_population_row)
-            output.seek(0)
-
-            return Response(
-                output.getvalue(),
-                mimetype="text/plain",
+            return format_csv_output(
+                result, total_population_entry=total_population_entry
             )
-        else:
-            return Response(json.dumps(result, indent=4), mimetype="application/json")
+
+        return Response(json.dumps(result, indent=4), mimetype="application/json")
+
     else:
         return jsonify({"error": "Failed to fetch data"}), 500
 
